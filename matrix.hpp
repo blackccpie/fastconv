@@ -116,18 +116,18 @@ public:
                         ssize_t ii = i + k ;
                         ssize_t jj = j + l;
 
-                        composed[pos++] += (*this)(ii,jj);
+                        composed[pos++] = (*this)(ii,jj);
                     }
                 }
             }
         }
 
         pos = 0u;
-        for ( auto i=0u; i<steps_lines; i++ ) // rows
+        for ( auto i=0u; i<steps_lines; i++ ) // lines
         {
             for ( auto j=0u; j<steps_cols; j++ )// columns
             {
-                auto sum = 0.f;
+                auto sum = T{0};
                 for ( const auto& val : kernel ) // use std functional
                     sum += val * composed[pos++];
                 output(i,j) = sum;
