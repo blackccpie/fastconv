@@ -104,7 +104,7 @@ public:
         std::array<T,composed_size> composed;
 
         // compute composed array
-        size_t pos = 0u;
+        T* composed_ptr = composed.data();
         for( auto i=0u; i <steps_lines; ++i ) // lines
         {
             for( auto j=0u; j<steps_cols; ++j ) // columns
@@ -117,7 +117,7 @@ public:
                         ssize_t ii = i + k ;
                         ssize_t jj = j + l;
 
-                        composed[pos++] = (*this)(ii,jj);
+                        *(composed_ptr++) = (*this)(ii,jj);
                     }
                 }
             }
