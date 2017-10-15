@@ -80,7 +80,7 @@ void profile_conv()
 
     std::cout << "convolution computed in : " << elapsed_ms1 << "ms" << std::endl;
     std::cout << "fast convolution computed in : " << elapsed_ms2 << "ms" << std::endl;
-    std::cout << "speedup factor : " << 100 * ( elapsed_ms1 - elapsed_ms2 ) / elapsed_ms1 << "%" << std::endl;
+    std::cout << "speedup factor : " << ( elapsed_ms1 ? ( 100 * ( elapsed_ms1 - elapsed_ms2 ) / elapsed_ms1 ) : 0 ) << "%" << std::endl;
     std::cout << "matrix comparison : " << std::string( output1.compare( output2 ) ? "OK" : "KO" ) << std::endl;
 }
 
