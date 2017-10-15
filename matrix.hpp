@@ -39,14 +39,14 @@ public:
 
 private:
     using std::array<T,M*N>::fill;
-    
+
 public:
 
     matrix() { fill( T{0}); }
-    
+
     T& operator()( size_t m, size_t n ) { return at( m*N + n ); }
     const T& operator()( size_t m, size_t n ) const { return at( m*N + n ); }
-    
+
     void uniform_assign( const T& v ) 
     {
         fill( v );
@@ -61,33 +61,26 @@ public:
     }
 
     template<size_t K, size_t L>
-    matrix convolve( const matrix<T,K,L>& kernel ) const
+    matrix<T,M-K+1,N-L+1> convolve( const matrix<T,K,L>& kernel ) const
     {
-        matrix output;
+        constexpr auto steps_lines = M - K + 1;
+        constexpr auto steps_cols = N - L + 1;
 
-        // find center position of kernel (half of kernel size)
-        constexpr auto k_center_y = K / 2;
-        constexpr auto k_center_x = L / 2;
+        matrix<T,steps_lines,steps_cols> output;
 
-        for( auto i=0u; i <M; ++i ) // rows
+        for( auto i=0u; i <steps_lines; ++i ) // lines
         {
-            for( auto j=0u; j<N; ++j ) // columns
+            for( auto j=0u; j<steps_cols; ++j ) // columns
             {
-                for( auto k=0u; k<K; ++k ) // kernel rows
+                for( auto k=0u; k<K; ++k ) // kernel lines
                 {
-                    auto kk = K - 1 - k; // row index of flipped kernel
-
                     for( auto l=0u; l<L; ++l ) // kernel columns
                     {
-                        auto ll = L - 1 - l; // column index of flipped kernel
-
                         // index of input signal, used for checking boundary
-                        ssize_t ii = i + ( k - k_center_y );
-                        ssize_t jj = j + ( l - k_center_x );
+                        ssize_t ii = i + k;
+                        ssize_t jj = j + l;
 
-                        // ignore input samples which are out of bound
-                        if( ii >= 0 && ii < M && jj >= 0 && jj < N )
-                            output(i,j) += (*this)(ii,jj) * kernel(kk,ll);
+                        output(i,j) += (*this)(ii,jj) * kernel(k,l);
                     }
                 }
             }
@@ -95,49 +88,40 @@ public:
 
         return output;
     }
-    
-    template<size_t K, size_t L>
-    matrix fast_convolve( const matrix<T,K,L>& kernel ) const
-    {
-        matrix output;
-        
-        //std::array<T,K*L> composed_kernel;
 
+    template<size_t K, size_t L>
+    matrix<T,M-K+1,N-L+1> fast_convolve( const matrix<T,K,L>& kernel ) const
+    {
         // find size of composed array
         constexpr auto steps_lines = M - K + 1;
         constexpr auto steps_cols = N - L + 1;
         constexpr auto composed_steps = steps_lines * steps_cols;
         constexpr auto kernel_size = K * L;
         constexpr auto composed_size = composed_steps * kernel_size;
-        
+
+        matrix<T,steps_lines,steps_cols> output;
         std::array<T,composed_size> composed;
-        
-        // find center position of kernel (half of kernel size)
-        constexpr auto k_center_y = K / 2;
-        constexpr auto k_center_x = L / 2;
-        
+
         // compute composed array
         size_t pos = 0u;
-        for( auto i=0u; i <M; ++i ) // rows
+        for( auto i=0u; i <steps_lines; ++i ) // lines
         {
-            for( auto j=0u; j<N; ++j ) // columns
+            for( auto j=0u; j<steps_cols; ++j ) // columns
             {
-                for( auto k=0u; k<K; ++k ) // kernel rows
+                for( auto k=0u; k<K; ++k ) // kernel lines
                 {
                     for( auto l=0u; l<L; ++l ) // kernel columns
                     {
                         // index of input signal, used for checking boundary
-                        ssize_t ii = i + ( k - k_center_y );
-                        ssize_t jj = j + ( l - k_center_x );
+                        ssize_t ii = i + k ;
+                        ssize_t jj = j + l;
 
-                        // ignore input samples which are out of bound
-                        if( ii >= 0 && ii < M && jj >= 0 && jj < N )
-                            composed[pos++] += (*this)(ii,jj);
+                        composed[pos++] += (*this)(ii,jj);
                     }
                 }
             }
         }
-        
+
         pos = 0u;
         for ( auto i=0u; i<steps_lines; i++ ) // rows
         {
@@ -149,22 +133,22 @@ public:
                 output(i,j) = sum;
             }
         }
-        
+
         return output;
     }
-    
+
     template<size_t K>
     matrix multiply( const matrix<T,N,K>& other ) const
     {
         matrix output;
-        
+
         for( auto m=0u; m<M; ++m )
             for( auto k=0u; k<K; ++k )
                 for( auto n=0u; n<N; ++n)
                 {
                     output(m,k) += (*this)(m,n) * other(n,k);
                 }
-        
+
         return output;
     }
 };

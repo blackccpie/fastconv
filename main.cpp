@@ -27,7 +27,7 @@ THE SOFTWARE.
 #include <chrono>
 #include <iostream>
 
-matrix<float,100,100> input;
+matrix<float,250,250> input;
 matrix<float,5,5> kernel;
 
 int run()
