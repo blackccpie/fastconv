@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 #include <array>
 #include <iostream>
+#include <numeric>
 
 template<typename T, size_t M, size_t N>
 class matrix : private std::array<T,M*N>
@@ -47,7 +48,7 @@ public:
     T& operator()( size_t m, size_t n ) { return at( m*N + n ); }
     const T& operator()( size_t m, size_t n ) const { return at( m*N + n ); }
 
-    void uniform_assign( const T& v ) 
+    void uniform_assign( const T& v )
     {
         fill( v );
     }
@@ -122,15 +123,14 @@ public:
             }
         }
 
-        pos = 0u;
+        auto output_iter = composed.begin();
         for ( auto i=0u; i<steps_lines; i++ ) // lines
         {
             for ( auto j=0u; j<steps_cols; j++ )// columns
             {
-                auto sum = T{0};
-                for ( const auto& val : kernel ) // use std functional
-                    sum += val * composed[pos++];
-                output(i,j) = sum;
+                output(i,j) = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
+                    return a + ( b * *output_iter++ );
+                });
             }
         }
 
