@@ -27,21 +27,19 @@ THE SOFTWARE.
 #include <chrono>
 #include <iostream>
 
-matrix<float,250,250> input;
 matrix<float,5,5> kernel;
 
-int run()
+template<size_t M, size_t N>
+void profile_conv()
 {
+    matrix<float,M,N> input;
     input.uniform_assign( 2.f );
-    kernel.uniform_assign( 3.f );
-
+    
     std::chrono::time_point<std::chrono::system_clock> start, end;
 
     start = std::chrono::system_clock::now();
     auto output1 = input.convolve( kernel );
     end = std::chrono::system_clock::now();
-
-    std::cout << output1.size() << std::endl;
     
     auto elapsed_ms1 = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
 
@@ -54,11 +52,30 @@ int run()
     std::cout << "convolution computed in : " << elapsed_ms1 << "ms" << std::endl;
     std::cout << "fast convolution computed in : " << elapsed_ms2 << "ms" << std::endl;
     std::cout << "matrix comparison : " << std::string( output1.compare( output2 ) ? "OK" : "KO" ) << std::endl;
+}
+
+template<size_t current_size, size_t increase_factor, size_t stop_size>
+void run()
+{
+    static_assert( current_size <= stop_size, "start size should be less or equal than stop size" );
     
-    return 0;
+    profile_conv<current_size,current_size>();
+    
+    constexpr auto recurse = current_size*increase_factor <= stop_size;
+    
+    if( recurse )
+    {
+        // Alexei Andrescu trick to stop compile time recursivity
+        // https://stackoverflow.com/questions/19466207/c-template-recursion-stop-condition
+        run<recurse ? current_size*increase_factor : 0,increase_factor,stop_size>();
+    }
 }
 
 int main( int argc, char **argv )
 {
-    return run();
+    kernel.uniform_assign( 3.f );
+
+    run<10,10,100>();
+    
+    return 0;
 }
