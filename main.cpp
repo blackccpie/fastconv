@@ -27,20 +27,49 @@ THE SOFTWARE.
 #include <chrono>
 #include <iostream>
 
+#ifndef WIN32
+    #include <sys/resource.h>
+#endif
+
+void set_stack_size( const size_t stack_size_mb )
+{
+#ifndef WIN32
+    //stackoverflow.com/questions/2275550/change-stack-size-for-a-c-application-in-linux-during-compilation-with-gnu-com
+    const rlim_t stack_size = stack_size_mb * 1024 * 1024;
+    struct rlimit rl;
+
+    auto result = getrlimit( RLIMIT_STACK, &rl );
+    if ( result == 0 )
+    {
+        if ( rl.rlim_cur < stack_size )
+        {
+            rl.rlim_cur = stack_size;
+            result = setrlimit( RLIMIT_STACK, &rl );
+            if ( result != 0 )
+            {
+                std::cerr << "setrlimit returned result = " << result << std::endl;
+            }
+        }
+    }
+#endif
+}
+
 matrix<float,5,5> kernel;
 
 template<size_t M, size_t N>
 void profile_conv()
 {
+    std::cout << "PROFILING " << M << "x" << N << " CONVOLUTIONS" << std::endl;
+
     matrix<float,M,N> input;
     input.uniform_assign( 2.f );
-    
+
     std::chrono::time_point<std::chrono::system_clock> start, end;
 
     start = std::chrono::system_clock::now();
     auto output1 = input.convolve( kernel );
     end = std::chrono::system_clock::now();
-    
+
     auto elapsed_ms1 = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
 
     start = std::chrono::system_clock::now();
@@ -51,31 +80,34 @@ void profile_conv()
 
     std::cout << "convolution computed in : " << elapsed_ms1 << "ms" << std::endl;
     std::cout << "fast convolution computed in : " << elapsed_ms2 << "ms" << std::endl;
+    std::cout << "speedup factor : " << 100 * ( elapsed_ms1 - elapsed_ms2 ) / elapsed_ms1 << "%" << std::endl;
     std::cout << "matrix comparison : " << std::string( output1.compare( output2 ) ? "OK" : "KO" ) << std::endl;
 }
 
-template<size_t current_size, size_t increase_factor, size_t stop_size>
+template<size_t current_size, size_t increment, size_t stop_size>
 void run()
 {
     static_assert( current_size <= stop_size, "start size should be less or equal than stop size" );
-    
+
     profile_conv<current_size,current_size>();
-    
-    constexpr auto recurse = current_size*increase_factor <= stop_size;
-    
+
+    constexpr auto recurse = current_size+increment <= stop_size;
+
     if( recurse )
     {
         // Alexei Andrescu trick to stop compile time recursivity
         // https://stackoverflow.com/questions/19466207/c-template-recursion-stop-condition
-        run<recurse ? current_size*increase_factor : 0,increase_factor,stop_size>();
+        run<recurse ? current_size+increment : 0,increment,stop_size>();
     }
 }
 
 int main( int argc, char **argv )
 {
+    set_stack_size( 120 ); // 120Mb
+
     kernel.uniform_assign( 3.f );
 
-    run<10,10,100>();
-    
+    run<100,100,1000>();
+
     return 0;
 }
