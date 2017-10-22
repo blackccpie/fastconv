@@ -31,15 +31,16 @@ THE SOFTWARE.
 template<typename T, size_t M, size_t N>
 class static_matrix : private std::array<T,M*N>
 {
-public:
     using std::array<T,M*N>::at;
     using std::array<T,M*N>::size;
-    using std::array<T,M*N>::operator[];
+    using std::array<T,M*N>::fill;
+
+public:
+
+    // needs to be public because kernel has size (K,L) != (M,N)
     using std::array<T,M*N>::begin;
     using std::array<T,M*N>::end;
-
-private:
-    using std::array<T,M*N>::fill;
+    using std::array<T,M*N>::operator[];
 
 public:
 
