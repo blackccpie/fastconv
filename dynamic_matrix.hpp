@@ -38,15 +38,12 @@ public:
     using std::vector<T>::end;
 
 private:
-    using std::vector<T>::fill;
-
-private:
     size_t m_lines;
     size_t m_cols;
 
 public:
 
-    dynamic_matrix() { fill( T{0}); }
+    dynamic_matrix() { std::fill( begin(), end(), T{0} ); }
     dynamic_matrix( size_t m, size_t n ) : std::vector<T>( m*n, 0 ), m_lines{m}, m_cols{n} {}
 
     //size_t lines() { return m_lines; }
@@ -57,7 +54,7 @@ public:
 
     void uniform_assign( const T& v )
     {
-        fill( v );
+        std::fill( begin(), end(), v );
     }
 
     bool compare( const dynamic_matrix<T>& other ) const
@@ -72,8 +69,8 @@ public:
 
     dynamic_matrix<T> convolve( const dynamic_matrix<T>& kernel ) const
     {
-        constexpr auto steps_lines = m_lines - kernel.m_lines + 1;
-        constexpr auto steps_cols = m_cols - kernel.m_cols + 1;
+        const auto steps_lines = m_lines - kernel.m_lines + 1;
+        const auto steps_cols = m_cols - kernel.m_cols + 1;
 
         dynamic_matrix<T> output( steps_lines, steps_cols );
 
@@ -101,11 +98,11 @@ public:
     dynamic_matrix<T> fast_convolve( const dynamic_matrix<T>& kernel ) const
     {
         // find size of composed array
-        constexpr auto steps_lines = m_lines - kernel.m_lines + 1;
-        constexpr auto steps_cols = m_cols - kernel.m_cols + 1;
-        constexpr auto composed_steps = steps_lines * steps_cols;
-        constexpr auto kernel_size = kernel.m_lines * kernel.m_cols;
-        constexpr auto composed_size = composed_steps * kernel_size;
+        const auto steps_lines = m_lines - kernel.m_lines + 1;
+        const auto steps_cols = m_cols - kernel.m_cols + 1;
+        const auto composed_steps = steps_lines * steps_cols;
+        const auto kernel_size = kernel.m_lines * kernel.m_cols;
+        const auto composed_size = composed_steps * kernel_size;
 
         dynamic_matrix<T> output( steps_lines, steps_cols );
         std::vector<T> composed( composed_size );

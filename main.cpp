@@ -55,13 +55,10 @@ void set_stack_size( const size_t stack_size_mb )
 #endif
 }
 
-template<typename kernelT, size_t M, size_t N>
-void profile_conv( const kernelT& kernel )
+template<typename matrixT, typename kernelT, size_t M, size_t N>
+void profile_conv( const matrixT& input, const kernelT& kernel )
 {
     std::cout << "PROFILING " << M << "x" << N << " CONVOLUTIONS" << std::endl;
-
-    static_matrix<float,M,N> input;
-    input.uniform_assign( 2.f );
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
 
@@ -84,11 +81,15 @@ void profile_conv( const kernelT& kernel )
 }
 
 template<typename kernelT, size_t current_size, size_t increment, size_t stop_size>
-void run( const kernelT& kernel )
+void run_static( const kernelT& kernel )
 {
     static_assert( current_size <= stop_size, "start size should be less or equal than stop size" );
 
-    profile_conv<kernelT,current_size,current_size>( kernel );
+    using matrixT = static_matrix<float,current_size,current_size>;
+    matrixT input;
+    input.uniform_assign( 2.f );
+
+    profile_conv<matrixT,kernelT,current_size,current_size>( input, kernel );
 
     constexpr auto recurse = current_size+increment <= stop_size;
 
@@ -96,19 +97,56 @@ void run( const kernelT& kernel )
     {
         // Alexei Andrescu trick to stop compile time recursivity
         // https://stackoverflow.com/questions/19466207/c-template-recursion-stop-condition
-        run<kernelT,recurse ? current_size+increment : 0,increment,stop_size>( kernel );
+        run_static<kernelT,recurse ? current_size+increment : 0,increment,stop_size>( kernel );
+    }
+}
+
+template<typename kernelT, size_t current_size, size_t increment, size_t stop_size>
+void run_dynamic( const kernelT& kernel )
+{
+    static_assert( current_size <= stop_size, "start size should be less or equal than stop size" );
+
+    using matrixT = dynamic_matrix<float>;
+    matrixT input( current_size, current_size );
+    input.uniform_assign( 2.f );
+
+    profile_conv<matrixT,kernelT,current_size,current_size>( input, kernel );
+
+    constexpr auto recurse = current_size+increment <= stop_size;
+
+    if( recurse )
+    {
+        // Alexei Andrescu trick to stop compile time recursivity
+        // https://stackoverflow.com/questions/19466207/c-template-recursion-stop-condition
+        run_dynamic<kernelT,recurse ? current_size+increment : 0,increment,stop_size>( kernel );
     }
 }
 
 int main( int argc, char **argv )
 {
-    set_stack_size( 120 ); // 120Mb
+    std::cout << "----------- STATIC MATRIX -----------" << std::endl << std::endl;
 
-    using kernel_type = static_matrix<float,5,5>;
-    kernel_type kernel;
-    kernel.uniform_assign( 3.f );
+    // STATIC
+    {
+        set_stack_size( 120 ); // 120Mb
 
-    run<kernel_type,100,100,1000>( kernel );
+        using kernel_type = static_matrix<float,5,5>;
+        kernel_type kernel;
+        kernel.uniform_assign( 3.f );
+
+        run_static<kernel_type,100,100,1000>( kernel );
+    }
+
+    std::cout << "----------- DYNAMIC MATRIX -----------" << std::endl << std::endl;
+
+    // dynamic_matrix
+    {
+        using kernel_type = dynamic_matrix<float>;
+        kernel_type kernel( 3, 3 );
+        kernel.uniform_assign( 3.f );
+
+        run_dynamic<kernel_type,100,100,1000>( kernel );
+    }
 
     return 0;
 }
