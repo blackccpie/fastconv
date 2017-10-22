@@ -124,7 +124,7 @@ void run_dynamic( const kernelT& kernel )
 
 int main( int argc, char **argv )
 {
-    std::cout << "----------- STATIC MATRIX -----------" << std::endl << std::endl;
+    std::cout << std::endl << "----------- STATIC MATRIX -----------" << std::endl << std::endl;
 
     // STATIC
     {
@@ -137,7 +137,7 @@ int main( int argc, char **argv )
         run_static<kernel_type,100,100,1000>( kernel );
     }
 
-    std::cout << "----------- DYNAMIC MATRIX -----------" << std::endl << std::endl;
+    std::cout << std::endl << "----------- DYNAMIC MATRIX -----------" << std::endl << std::endl;
 
     // dynamic_matrix
     {

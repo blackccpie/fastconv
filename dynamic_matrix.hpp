@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include <numeric>
 
@@ -128,15 +129,24 @@ public:
         }
 
         auto output_iter = composed.begin();
-        for ( auto i=0u; i<steps_lines; i++ ) // lines
-        {
-            for ( auto j=0u; j<steps_cols; j++ )// columns
+
+        std::for_each( output.begin(), output.end(), [&kernel,&output_iter]( T& elem )
             {
-                output(i,j) = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
+                elem = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
                     return a + ( b * *output_iter++ );
                 });
             }
-        }
+        );
+
+        // for ( auto i=0u; i<steps_lines; i++ ) // lines
+        // {
+        //     for ( auto j=0u; j<steps_cols; j++ )// columns
+        //     {
+        //         output(i,j) = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
+        //             return a + ( b * *output_iter++ );
+        //         });
+        //     }
+        // }
 
         return output;
     }
