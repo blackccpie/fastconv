@@ -130,7 +130,7 @@ int main( int argc, char **argv )
     {
         set_stack_size( 120 ); // 120Mb
 
-        using kernel_type = static_matrix<float,5,5>;
+        using kernel_type = static_matrix<float,4,4>;
         kernel_type kernel;
         kernel.uniform_assign( 3.f );
 
@@ -142,7 +142,7 @@ int main( int argc, char **argv )
     // dynamic_matrix
     {
         using kernel_type = dynamic_matrix<float>;
-        kernel_type kernel( 3, 3 );
+        kernel_type kernel( 4, 4 );
         kernel.uniform_assign( 3.f );
 
         run_dynamic<kernel_type,100,100,1000>( kernel );
