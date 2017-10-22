@@ -23,6 +23,7 @@ THE SOFTWARE.
 */
 
 #include "matrix.hpp"
+//#include "dynamic_matrix.hpp"
 
 #include <chrono>
 #include <iostream>
@@ -54,14 +55,14 @@ void set_stack_size( const size_t stack_size_mb )
 #endif
 }
 
-matrix<float,5,5> kernel;
+static_matrix<float,5,5> kernel;
 
 template<size_t M, size_t N>
 void profile_conv()
 {
     std::cout << "PROFILING " << M << "x" << N << " CONVOLUTIONS" << std::endl;
 
-    matrix<float,M,N> input;
+    static_matrix<float,M,N> input;
     input.uniform_assign( 2.f );
 
     std::chrono::time_point<std::chrono::system_clock> start, end;

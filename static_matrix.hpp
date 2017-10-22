@@ -25,11 +25,10 @@ THE SOFTWARE.
 #pragma once
 
 #include <array>
-#include <iostream>
 #include <numeric>
 
 template<typename T, size_t M, size_t N>
-class matrix : private std::array<T,M*N>
+class static_matrix : private std::array<T,M*N>
 {
 public:
     using std::array<T,M*N>::at;
@@ -43,7 +42,7 @@ private:
 
 public:
 
-    matrix() { fill( T{0}); }
+    static_matrix() { fill( T{0}); }
 
     T& operator()( size_t m, size_t n ) { return at( m*N + n ); }
     const T& operator()( size_t m, size_t n ) const { return at( m*N + n ); }
@@ -53,7 +52,7 @@ public:
         fill( v );
     }
 
-    bool compare( const matrix<T,M,N>& other ) const
+    bool compare( const static_matrix<T,M,N>& other ) const
     {
         for( auto i=0u; i<M*N; i++ )
             if ( other[i] != (*this)[i] )
@@ -62,12 +61,12 @@ public:
     }
 
     template<size_t K, size_t L>
-    matrix<T,M-K+1,N-L+1> convolve( const matrix<T,K,L>& kernel ) const
+    static_matrix<T,M-K+1,N-L+1> convolve( const static_matrix<T,K,L>& kernel ) const
     {
         constexpr auto steps_lines = M - K + 1;
         constexpr auto steps_cols = N - L + 1;
 
-        matrix<T,steps_lines,steps_cols> output;
+        static_matrix<T,steps_lines,steps_cols> output;
 
         for( auto i=0u; i <steps_lines; ++i ) // lines
         {
@@ -91,7 +90,7 @@ public:
     }
 
     template<size_t K, size_t L>
-    matrix<T,M-K+1,N-L+1> fast_convolve( const matrix<T,K,L>& kernel ) const
+    static_matrix<T,M-K+1,N-L+1> fast_convolve( const static_matrix<T,K,L>& kernel ) const
     {
         // find size of composed array
         constexpr auto steps_lines = M - K + 1;
@@ -100,7 +99,7 @@ public:
         constexpr auto kernel_size = K * L;
         constexpr auto composed_size = composed_steps * kernel_size;
 
-        matrix<T,steps_lines,steps_cols> output;
+        static_matrix<T,steps_lines,steps_cols> output;
         std::array<T,composed_size> composed;
 
         // compute composed array
@@ -138,9 +137,9 @@ public:
     }
 
     template<size_t K>
-    matrix multiply( const matrix<T,N,K>& other ) const
+    static_matrix multiply( const static_matrix<T,N,K>& other ) const
     {
-        matrix output;
+        static_matrix output;
 
         for( auto m=0u; m<M; ++m )
             for( auto k=0u; k<K; ++k )
