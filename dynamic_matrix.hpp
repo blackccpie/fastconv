@@ -24,57 +24,66 @@ THE SOFTWARE.
 
 #pragma once
 
-#include <array>
+#include <vector>
 #include <numeric>
 
-template<typename T, size_t M, size_t N>
-class static_matrix : private std::array<T,M*N>
+template<typename T>
+class dynamic_matrix : private std::vector<T>
 {
 public:
-    using std::array<T,M*N>::at;
-    using std::array<T,M*N>::size;
-    using std::array<T,M*N>::operator[];
-    using std::array<T,M*N>::begin;
-    using std::array<T,M*N>::end;
+    using std::vector<T>::at;
+    using std::vector<T>::size;
+    using std::vector<T>::operator[];
+    using std::vector<T>::begin;
+    using std::vector<T>::end;
 
 private:
-    using std::array<T,M*N>::fill;
+    using std::vector<T>::fill;
+
+private:
+    size_t m_lines;
+    size_t m_cols;
 
 public:
 
-    static_matrix() { fill( T{0}); }
+    dynamic_matrix() { fill( T{0}); }
+    dynamic_matrix( size_t m, size_t n ) : std::vector<T>( m*n, 0 ), m_lines{m}, m_cols{n} {}
 
-    T& operator()( size_t m, size_t n ) { return at( m*N + n ); }
-    const T& operator()( size_t m, size_t n ) const { return at( m*N + n ); }
+    //size_t lines() { return m_lines; }
+    //size_t cols() { return m_cols; }
+
+    T& operator()( size_t m, size_t n ) { return at( m*m_cols + n ); }
+    const T& operator()( size_t m, size_t n ) const { return at( m*m_cols + n ); }
 
     void uniform_assign( const T& v )
     {
         fill( v );
     }
 
-    bool compare( const static_matrix<T,M,N>& other ) const
+    bool compare( const dynamic_matrix<T>& other ) const
     {
-        for( auto i=0u; i<M*N; i++ )
+        // TODO : assert
+
+        for( auto i=0u; i<m_lines*m_cols; i++ )
             if ( other[i] != (*this)[i] )
                 return false;
         return true;
     }
 
-    template<size_t K, size_t L>
-    static_matrix<T,M-K+1,N-L+1> convolve( const static_matrix<T,K,L>& kernel ) const
+    dynamic_matrix<T> convolve( const dynamic_matrix<T>& kernel ) const
     {
-        constexpr auto steps_lines = M - K + 1;
-        constexpr auto steps_cols = N - L + 1;
+        constexpr auto steps_lines = m_lines - kernel.m_lines + 1;
+        constexpr auto steps_cols = m_cols - kernel.m_cols + 1;
 
-        static_matrix<T,steps_lines,steps_cols> output;
+        dynamic_matrix<T> output( steps_lines, steps_cols );
 
         for( auto i=0u; i <steps_lines; ++i ) // lines
         {
             for( auto j=0u; j<steps_cols; ++j ) // columns
             {
-                for( auto k=0u; k<K; ++k ) // kernel lines
+                for( auto k=0u; k<kernel.m_lines; ++k ) // kernel lines
                 {
-                    for( auto l=0u; l<L; ++l ) // kernel columns
+                    for( auto l=0u; l<kernel.m_cols; ++l ) // kernel columns
                     {
                         // index of input signal, used for checking boundary
                         ssize_t ii = i + k;
@@ -89,18 +98,17 @@ public:
         return output;
     }
 
-    template<size_t K, size_t L>
-    static_matrix<T,M-K+1,N-L+1> fast_convolve( const static_matrix<T,K,L>& kernel ) const
+    dynamic_matrix<T> fast_convolve( const dynamic_matrix<T>& kernel ) const
     {
         // find size of composed array
-        constexpr auto steps_lines = M - K + 1;
-        constexpr auto steps_cols = N - L + 1;
+        constexpr auto steps_lines = m_lines - kernel.m_lines + 1;
+        constexpr auto steps_cols = m_cols - kernel.m_cols + 1;
         constexpr auto composed_steps = steps_lines * steps_cols;
-        constexpr auto kernel_size = K * L;
+        constexpr auto kernel_size = kernel.m_lines * kernel.m_cols;
         constexpr auto composed_size = composed_steps * kernel_size;
 
-        static_matrix<T,steps_lines,steps_cols> output;
-        std::array<T,composed_size> composed;
+        dynamic_matrix<T> output( steps_lines, steps_cols );
+        std::vector<T> composed( composed_size );
 
         // compute composed array
         T* composed_ptr = composed.data();
@@ -108,9 +116,9 @@ public:
         {
             for( auto j=0u; j<steps_cols; ++j ) // columns
             {
-                for( auto k=0u; k<K; ++k ) // kernel lines
+                for( auto k=0u; k<kernel.m_lines; ++k ) // kernel lines
                 {
-                    for( auto l=0u; l<L; ++l ) // kernel columns
+                    for( auto l=0u; l<kernel.m_cols; ++l ) // kernel columns
                     {
                         // index of input signal, used for checking boundary
                         ssize_t ii = i + k ;
@@ -136,14 +144,15 @@ public:
         return output;
     }
 
-    template<size_t K>
-    static_matrix multiply( const static_matrix<T,N,K>& other ) const
+    dynamic_matrix multiply( const dynamic_matrix<T>& other ) const
     {
-        static_matrix<T,M,K> output;
+        // TODO : assert
 
-        for( auto m=0u; m<M; ++m )
-            for( auto k=0u; k<K; ++k )
-                for( auto n=0u; n<N; ++n)
+        dynamic_matrix output( m_lines, other.m_cols );
+
+        for( auto m=0u; m<m_lines; ++m )
+            for( auto k=0u; k<other.m_cols; ++k )
+                for( auto n=0u; n<m_cols; ++n)
                 {
                     output(m,k) += (*this)(m,n) * other(n,k);
                 }

@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "matrix.hpp"
-//#include "dynamic_matrix.hpp"
+#include "static_matrix.hpp"
+#include "dynamic_matrix.hpp"
 
 #include <chrono>
 #include <iostream>
@@ -55,10 +55,8 @@ void set_stack_size( const size_t stack_size_mb )
 #endif
 }
 
-static_matrix<float,5,5> kernel;
-
-template<size_t M, size_t N>
-void profile_conv()
+template<typename kernelT, size_t M, size_t N>
+void profile_conv( const kernelT& kernel )
 {
     std::cout << "PROFILING " << M << "x" << N << " CONVOLUTIONS" << std::endl;
 
@@ -85,12 +83,12 @@ void profile_conv()
     std::cout << "matrix comparison : " << std::string( output1.compare( output2 ) ? "OK" : "KO" ) << std::endl;
 }
 
-template<size_t current_size, size_t increment, size_t stop_size>
-void run()
+template<typename kernelT, size_t current_size, size_t increment, size_t stop_size>
+void run( const kernelT& kernel )
 {
     static_assert( current_size <= stop_size, "start size should be less or equal than stop size" );
 
-    profile_conv<current_size,current_size>();
+    profile_conv<kernelT,current_size,current_size>( kernel );
 
     constexpr auto recurse = current_size+increment <= stop_size;
 
@@ -98,7 +96,7 @@ void run()
     {
         // Alexei Andrescu trick to stop compile time recursivity
         // https://stackoverflow.com/questions/19466207/c-template-recursion-stop-condition
-        run<recurse ? current_size+increment : 0,increment,stop_size>();
+        run<kernelT,recurse ? current_size+increment : 0,increment,stop_size>( kernel );
     }
 }
 
@@ -106,9 +104,11 @@ int main( int argc, char **argv )
 {
     set_stack_size( 120 ); // 120Mb
 
+    using kernel_type = static_matrix<float,5,5>;
+    kernel_type kernel;
     kernel.uniform_assign( 3.f );
 
-    run<100,100,1000>();
+    run<kernel_type,100,100,1000>( kernel );
 
     return 0;
 }
