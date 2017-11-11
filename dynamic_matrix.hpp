@@ -27,9 +27,12 @@ THE SOFTWARE.
 #include <algorithm>
 #include <vector>
 #include <numeric>
+#include <type_traits>
+
+#include <smmintrin.h>  // SSE4
 
 template<typename T>
-class dynamic_matrix : private std::vector<T>
+class alignas(16) dynamic_matrix : private std::vector<T>
 {
     using std::vector<T>::begin;
     using std::vector<T>::at;
@@ -127,25 +130,23 @@ public:
             }
         }
 
-        auto output_iter = composed.begin();
+        auto* p_comp = composed.data();
 
-        std::for_each( output.begin(), output.end(), [&kernel,&output_iter]( T& elem )
+        std::for_each( output.begin(), output.end(), [this,&kernel,&p_comp]( T& elem )
             {
-                elem = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
-                    return a + ( b * *output_iter++ );
-                });
+                elem = kernel_mulac_simd( kernel, p_comp );
+                p_comp += kernel.size();
             }
         );
 
-        // for ( auto i=0u; i<steps_lines; i++ ) // lines
-        // {
-        //     for ( auto j=0u; j<steps_cols; j++ )// columns
+        //auto output_iter = composed.begin();
+        // std::for_each( output.begin(), output.end(), [&kernel,&output_iter]( T& elem )
         //     {
-        //         output(i,j) = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
+        //         elem = std::accumulate( kernel.begin(), kernel.end(), T{0}, [&output_iter]( const T& a, const T& b) {
         //             return a + ( b * *output_iter++ );
         //         });
         //     }
-        // }
+        // );
 
         return output;
     }
@@ -164,5 +165,28 @@ public:
                 }
 
         return output;
+    }
+
+private:
+
+    T kernel_mulac_simd( const dynamic_matrix<T>& kernel, T* p ) const
+    {
+        // TODO : assert
+
+        static_assert( std::is_same<T,float>(), "kernel_accumulate_simd is only compatible with float type for now" );
+
+        __m128 mm_sum = _mm_setzero_ps();
+
+        auto* ker = kernel.data();
+
+        for( auto i=0u; i<4*(kernel.size()/4); i+=4)
+        {
+            mm_sum = _mm_add_ps( mm_sum, _mm_mul_ps( _mm_load_ps( ker + i ), _mm_load_ps( p + i ) ) );
+        }
+
+        mm_sum = _mm_hadd_ps( mm_sum, mm_sum );
+        mm_sum = _mm_hadd_ps( mm_sum, mm_sum );
+
+        return mm_sum[0];
     }
 };
