@@ -128,13 +128,13 @@ int main( int argc, char **argv )
 
     // STATIC
     {
-        set_stack_size( 120 ); // 120Mb
+        set_stack_size( 250 ); // 250Mb
 
         using kernel_type = static_matrix<float,4,4>;
         kernel_type kernel;
         kernel.uniform_assign( 3.f );
 
-        run_static<kernel_type,100,100,1000>( kernel );
+        run_static<kernel_type,100,100,1500>( kernel );
     }
 
     std::cout << std::endl << "----------- DYNAMIC MATRIX -----------" << std::endl << std::endl;
@@ -145,7 +145,7 @@ int main( int argc, char **argv )
         kernel_type kernel( 4, 4 );
         kernel.uniform_assign( 3.f );
 
-        run_dynamic<kernel_type,100,100,1000>( kernel );
+        run_dynamic<kernel_type,100,100,3000>( kernel );
     }
 
     return 0;

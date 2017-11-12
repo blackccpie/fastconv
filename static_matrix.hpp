@@ -27,9 +27,12 @@ THE SOFTWARE.
 #include <algorithm>
 #include <array>
 #include <numeric>
+#include <type_traits>
+
+#include <immintrin.h> // AVX
 
 template<typename T, size_t M, size_t N>
-class alignas(16) static_matrix : private std::array<T,M*N>
+class static_matrix : private std::array<T,M*N>
 {
     using std::array<T,M*N>::at;
     using std::array<T,M*N>::fill;
@@ -166,17 +169,19 @@ private:
     template<size_t K,size_t L>
     T kernel_mulac_simd( const static_matrix<T,K,L>& kernel, T* p ) const
     {
-        // TODO : assert
+        // TODO : kernel size assert
 
         static_assert( std::is_same<T,float>(), "kernel_accumulate_simd is only compatible with float type for now" );
 
         __m128 mm_sum = _mm_setzero_ps();
 
-        auto* ker = kernel.data();
+        const auto* ker = kernel.data();
 
-        for( auto i=0u; i<4*(kernel.size()/4); i+=4)
+        constexpr auto loop_size = 4*(kernel.size()/4);
+
+        for( auto i=0u; i<loop_size; i+=4)
         {
-            mm_sum = _mm_add_ps( mm_sum, _mm_mul_ps( _mm_load_ps( ker + i ), _mm_load_ps( p + i ) ) );
+            mm_sum = _mm_fmadd_ps( _mm_load_ps( ker + i ), _mm_load_ps( p + i ), mm_sum );
         }
 
         mm_sum = _mm_hadd_ps( mm_sum, mm_sum );

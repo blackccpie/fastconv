@@ -29,10 +29,10 @@ THE SOFTWARE.
 #include <numeric>
 #include <type_traits>
 
-#include <smmintrin.h>  // SSE4
+#include <immintrin.h> // AVX
 
 template<typename T>
-class alignas(16) dynamic_matrix : private std::vector<T>
+class dynamic_matrix : private std::vector<T>
 {
     using std::vector<T>::begin;
     using std::vector<T>::at;
@@ -153,7 +153,7 @@ public:
 
     dynamic_matrix multiply( const dynamic_matrix<T>& other ) const
     {
-        // TODO : assert
+        // TODO : other matrix size assert
 
         dynamic_matrix output( m_lines, other.m_cols );
 
@@ -171,17 +171,17 @@ private:
 
     T kernel_mulac_simd( const dynamic_matrix<T>& kernel, T* p ) const
     {
-        // TODO : assert
+        // TODO : kernel size assert
 
         static_assert( std::is_same<T,float>(), "kernel_accumulate_simd is only compatible with float type for now" );
 
         __m128 mm_sum = _mm_setzero_ps();
 
-        auto* ker = kernel.data();
+        const auto* ker = kernel.data();
 
         for( auto i=0u; i<4*(kernel.size()/4); i+=4)
         {
-            mm_sum = _mm_add_ps( mm_sum, _mm_mul_ps( _mm_load_ps( ker + i ), _mm_load_ps( p + i ) ) );
+            mm_sum = _mm_fmadd_ps( _mm_load_ps( ker + i ), _mm_load_ps( p + i ), mm_sum );
         }
 
         mm_sum = _mm_hadd_ps( mm_sum, mm_sum );
