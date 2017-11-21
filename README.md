@@ -14,3 +14,5 @@ Testing this scenario required to increase the allowed stack size for the applic
 ### Dynamic allocation matrix container
 
 Here the time spent to build the im2col/Toeplitz matrix is counterbalanced with the reduced time to operate the mulitply/add operations related to GEMM. The latter process can be efficiently vectorized using appropriate SIMD intrinsics.
+
+First preliminary results show an average **20%** gain in computation time compared to the standard implementation.
