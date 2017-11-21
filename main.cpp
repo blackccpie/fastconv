@@ -60,19 +60,35 @@ void profile_conv( const matrixT& input, const kernelT& kernel )
 {
     std::cout << "PROFILING " << M << "x" << N << " CONVOLUTIONS" << std::endl;
 
-    std::chrono::time_point<std::chrono::system_clock> start, end;
+    auto prof_10 = []( auto fn ) // since C++14
+    {
+    	std::chrono::time_point<std::chrono::system_clock> start, end;
+        auto elapsed_ms = 0l;
 
-    start = std::chrono::system_clock::now();
+        for( auto i=0; i<10; i++ )
+        {
+    		start = std::chrono::system_clock::now();
+            fn();
+            end = std::chrono::system_clock::now();
+
+            elapsed_ms += std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+        }
+
+        // compute mean time
+        return elapsed_ms / 10;
+    };
+
+    // compute mean time over 10x convolutions
+    auto elapsed_ms1 = prof_10( [&input,&kernel](){ input.convolve( kernel ); } );
+
+    // compute once for matrix comparison
     auto output1 = input.convolve( kernel );
-    end = std::chrono::system_clock::now();
 
-    auto elapsed_ms1 = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+    // compute mean time over 10x fast convolutions
+    auto elapsed_ms2 = prof_10( [&input,&kernel](){ input.fast_convolve( kernel ); } );
 
-    start = std::chrono::system_clock::now();
+    // compute once for matrix comparison
     auto output2 = input.fast_convolve( kernel );
-    end = std::chrono::system_clock::now();
-
-    auto elapsed_ms2 = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
 
     std::cout << "convolution computed in : " << elapsed_ms1 << "ms" << std::endl;
     std::cout << "fast convolution computed in : " << elapsed_ms2 << "ms" << std::endl;
